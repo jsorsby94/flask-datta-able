@@ -1,0 +1,154 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Post Detail {% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- [ Main Content ] start -->
+<div class="pcoded-main-container">
+    <div class="pcoded-wrapper">
+        <div class="pcoded-content">
+            <div class="pcoded-inner-content">
+                <!-- [ breadcrumb ] start -->
+                <div class="page-header">
+                    <div class="page-block">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <div class="page-header-title">
+                                    <h5 class="m-b-10">Post</h5>
+                                </div>
+                                <ul class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/"><i class="feather icon-home"></i></a></li>
+                                    <li class="breadcrumb-item"><a href="javascript:">Post</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- [ breadcrumb ] end -->
+                <div class="main-body">
+                    <div class="page-wrapper">
+                        <!-- [ Main Content ] start -->
+                        <div class="row">
+                            {% for key, value in post.items() %}
+                            <div class="col-sm-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>{{ key }}</h5>
+                                    </div>
+                                    <div class="card-block">
+                                        {% if key == "thumbnail" %}
+                                        <img src="{{ value }}" alt="{{ key }}">
+                                        {% elif key == "openai_response" %}
+                                        <p>{{ value.choices[0].text }}</p>
+                                        {% else %}
+                                        <p>{{ value }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div class="col-sm-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Response Generator</h5>
+                                    </div>
+                                    <div class="card-block">
+                                        <div class="col-md-6">
+                                            <form>
+                                                <div class="form-group">
+                                                    <label>Content</label>
+                                                    <input type="text" class="form-control" placeholder="Text" value="{{ post['title'] }}">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="exampleFormControlSelect1">Prompt</label>
+                                                    <select class="form-control" id="exampleFormControlSelect1">
+                                                        <option>You are a social media community manager for Gear Hugger, a Multi-Purpose Lubricant is a plant-based, non-toxic, odorless solution that is easy to use, powerful and effective, and safe around kids and pets. Subtlety sell Gear Hugger by replying to the following post on Reddit. Gear Hugger's website is www.gear-hugger.com Post: {title} Subreddit: {subreddit}</option>
+                                                        <option>As a community manager for Gear Hugger, a plant-based, non-toxic, odorless lubricant, your task is to subtly promote the product in response to a post on Reddit. Gear Hugger is a powerful and effective solution that is safe for kids and pets and easy to use. Gear Hugger's benefits and website www.gear-hugger.com.</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <button id="generate_response_button" type="button" class="btn btn-primary">Generate Response</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <form>
+                                                <div class="form-group">
+                                                    <label>Response</label>
+                                                    <textarea id="response_text_area" class="form-control" id="response_textarea" rows="5"></textarea>
+                                                </div>
+                                                <div class="form-group">
+                                                    <button id="reddit_reply_button" type="button" class="btn btn-success">Reply on Reddit</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>                        
+                        </div>
+                        <!-- [ Main Content ] end -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="success-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Success</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+</div>
+<!-- [ Main Content ] end -->
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script>
+$("#generate_response_button").click(function() {
+  $.ajax({
+    type: 'POST',
+    url: 'http://0.0.0.0:8000/reddit/submission/generate_response?_id={{ post._id }}',
+    headers: {
+      'accept': 'application/json'
+    },
+    beforeSend: function() {
+      $("#response_text_area").val("Loading...");
+    },
+    success: function(data) {
+      $("#response_text_area").val(data.choices[0].text.replace(/\n/g, ''));
+    }
+  });
+});
+</script>
+<script>
+$('#reddit_reply_button').click(function() {
+  var text = $('#response_text_area').val();
+  $.ajax({
+    type: 'POST',
+    url: 'http://0.0.0.0:8000/reddit/submission/post_response?submission_id=10nyw3x&text=' + text,
+    success: function(response) {
+      var permalink = 'https://www.reddit.com' + response.permalink;
+      $('#success-modal .modal-body').text(permalink);
+      $('#success-modal').modal('show');
+    }
+  });
+});
+</script>
+{% endblock javascripts %}
